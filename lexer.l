@@ -152,54 +152,64 @@ identifier                  [a-zA-Z_][a-zA-Z0-9_]*
  /* TODO: underscore within integer/floating literals */
 "null"                      return LITERAL_NULL;
 {integer}                   {
-                                yylval.integer.value = atoi(yytext);
-                                yylval.integer.type = INTEGER_TYPE_INTEGER;
+                                yylval.integer = (integer_type*)malloc(sizeof(integer_type*));
+                                yylval.integer->value = atoi(yytext);
+                                yylval.integer->type = INTEGER_TYPE_INTEGER;
                                 return LITERAL_INTEGER;
                             }
 "0b"{binary}                {
-                                yylval.integer.value = strtol(yytext+2, NULL, 2);
-                                yylval.integer.type = INTEGER_TYPE_INTEGER;
+                                yylval.integer = (integer_type*)malloc(sizeof(integer_type*));
+                                yylval.integer->value = strtol(yytext+2, NULL, 2);
+                                yylval.integer->type = INTEGER_TYPE_INTEGER;
                                 return LITERAL_INTEGER;
                             }
 "0x"{hexadecimal}           {
-                                yylval.integer.value = strtol(yytext+2, NULL, 16);
-                                yylval.integer.type = INTEGER_TYPE_INTEGER;
+                                yylval.integer = (integer_type*)malloc(sizeof(integer_type*));
+                                yylval.integer->value = strtol(yytext+2, NULL, 16);
+                                yylval.integer->type = INTEGER_TYPE_INTEGER;
                                 return LITERAL_INTEGER;
                             }
 {integer}("l"|"L")          {
-                                yylval.integer.value = atoi(yytext);
-                                yylval.integer.type = INTEGER_TYPE_LONG;
+                                yylval.integer = (integer_type*)malloc(sizeof(integer_type*));
+                                yylval.integer->value = atoi(yytext);
+                                yylval.integer->type = INTEGER_TYPE_LONG;
                                 return LITERAL_INTEGER;
                             }
 "0b"{binary}("l"|"L")       {
-                                yylval.integer.value = strtol(yytext+2, NULL, 2);
-                                yylval.integer.type = INTEGER_TYPE_LONG;
+                                yylval.integer = (integer_type*)malloc(sizeof(integer_type*));
+                                yylval.integer->value = strtol(yytext+2, NULL, 2);
+                                yylval.integer->type = INTEGER_TYPE_LONG;
                                 return LITERAL_INTEGER;
                             }
 "0x"{hexadecimal}("l"|"L")  {
-                                yylval.integer.value = strtol(yytext+2, NULL, 16);
-                                yylval.integer.type = INTEGER_TYPE_LONG;
+                                yylval.integer = (integer_type*)malloc(sizeof(integer_type*));
+                                yylval.integer->value = strtol(yytext+2, NULL, 16);
+                                yylval.integer->type = INTEGER_TYPE_LONG;
                                 return LITERAL_INTEGER;
                             }
 {floating}("f"|"F")         {
-                                yylval.floating.value = atof(yytext);
-                                yylval.floating.type = FLOATING_TYPE_FLOAT;
+                                yylval.floating = (floating_type*)malloc(sizeof(floating_type*));
+                                yylval.floating->value = atof(yytext);
+                                yylval.floating->type = FLOATING_TYPE_FLOAT;
                                 return LITERAL_FLOATING;
                             }
 {floating}("d"|"D")         {
-                                yylval.floating.value = atof(yytext);
-                                yylval.floating.type = FLOATING_TYPE_DOUBLE;
+                                yylval.floating = (floating_type*)malloc(sizeof(floating_type*));
+                                yylval.floating->value = atof(yytext);
+                                yylval.floating->type = FLOATING_TYPE_DOUBLE;
                                 return LITERAL_FLOATING;
                             }
  /* scientific double */
 {floating}"e"{integer}      {
-                                yylval.floating.value = atof(yytext);
-                                yylval.floating.type = FLOATING_TYPE_DOUBLE;
+                                yylval.floating = (floating_type*)malloc(sizeof(floating_type*));
+                                yylval.floating->value = atof(yytext);
+                                yylval.floating->type = FLOATING_TYPE_DOUBLE;
                                 return LITERAL_FLOATING;
                             }
 {floating}                  {
-                                yylval.floating.value = atof(yytext);
-                                yylval.floating.type = FLOATING_TYPE_DOUBLE;
+                                yylval.floating = (floating_type*)malloc(sizeof(floating_type*));
+                                yylval.floating->value = atof(yytext);
+                                yylval.floating->type = FLOATING_TYPE_DOUBLE;
                                 return LITERAL_FLOATING;
                             }
 {string}                    {

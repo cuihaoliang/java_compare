@@ -21,6 +21,7 @@
 #include <stdlib.h>
 
 #include "integer_floating.h"
+
 extern int yylex();
 extern int yylineno;
 extern char *yytext;
@@ -31,14 +32,8 @@ void yyerror(const char *msg);
 
 %union {
     char *identifier;
-    struct  {
-                long long int value;
-                int type;
-            } integer;
-    struct  {
-                long double value;
-                int type;
-            } floating;
+    struct integer_type *integer;
+    struct floating_type *floating;
     char *string;
     char character;
 
