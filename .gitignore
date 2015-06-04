@@ -1,0 +1,7 @@
+*.o
+*.d
+lexer.c
+parser.c
+parser.h
+java_compare
+
