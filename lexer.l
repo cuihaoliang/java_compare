@@ -129,6 +129,17 @@ identifier                  [a-zA-Z_][a-zA-Z0-9_]*
 "&"                         return OP_BITWISEAND;
 "^"                         return OP_BITWISEXOR;
 "|"                         return OP_BITWISEOR;
+"/="                        return OP_ASSIGNDIVIDE;
+"*="                        return OP_ASSIGNMULTIPLY;
+"+="                        return OP_ASSIGNADD;
+"-="                        return OP_ASSIGNSUBTRACT;
+"%="                        return OP_ASSIGNREMAINDER;
+"<<="                       return OP_ASSIGNSHIFTLEFT;
+">>="                       return OP_ASSIGNSHIFTRIGHT;
+">>>="                      return OP_ASSIGNUNSIGNEDSHIFTRIGHT;
+"&="                        return OP_ASSIGNAND;
+"^="                        return OP_ASSIGNXOR;
+"|="                        return OP_ASSIGNOR;
 
  /* parantheses */
 "("                         return PARANTHESES_LEFT;
