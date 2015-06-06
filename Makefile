@@ -27,6 +27,7 @@ ifeq ($(DEBUG),1)
 	CFLAGS += -O0 -g3 -ggdb -pg -DDEBUG=1
 	CXXFLAGS += -O0 -g3 -ggdb -pg -DDEBUG=1
 	LDFLAGS += -pg
+	YACCFLAGS += --debug --verbose
 endif
 
 ifeq ($(VERBOSE),1)
@@ -46,7 +47,7 @@ release: $(OUT)
 
 clean:
 	$(MSG) -e "\tCLEAN\t"
-	$(CMD)$(RM) $(INTERMED) $(OBJ) $(DEP) $(OUT)
+	$(CMD)$(RM) $(INTERMED) $(OBJ) $(DEP) $(OUT) *.output
 
 $(OUT): $(OBJ)
 	$(MSG) -e "\tLINK\t$@"

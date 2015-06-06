@@ -40,7 +40,17 @@ floating                    [0-9]*\.[0-9]+
 string                      \"(\\.|[^"])*\"
 character                   \'(\\.|[^'])*\'
 identifier                  [a-zA-Z_][a-zA-Z0-9_]*
-
+BLANK                       [ ]
+BLK                         [\b]
+TAB                         [\t]
+FF                          [\f]
+ESCCHR                      [\\]
+CR                          [\r]
+LF                          [\n]
+AnyButSlash                 [^\/]
+AnyButAstr                  [^\*]
+ /* TODO */
+Dimension                   [\[]({CR}|{LF}|{FF}|{TAB}|{BLK}|{BLANK})*[\]]
 %%
 
  /* keywords */
@@ -114,18 +124,18 @@ identifier                  [a-zA-Z_][a-zA-Z0-9_]*
 "!"                         return OP_NOT;
 "=="                        return OP_EQUAL;
 "!="                        return OP_NOTEQUAL;
-">"                         return OP_GREATER;
-">="                        return OP_GREATEROREQUAL;
-"<"                         return OP_LESS;
-"<="                        return OP_LESSOREQUAL;
+">"                         return OP_GREATERTHAN;
+">="                        return OP_GREATERTHANOREQUAL;
+"<"                         return OP_LESSTHAN;
+"<="                        return OP_LESSTHANOREQUAL;
 "&&"                        return OP_LOGICALAND;
 "||"                        return OP_LOGICALOR;
 "?"                         return OP_TERNARYBEGIN;
 ":"                         return OP_TERNARYBETWEEN;
 "~"                         return OP_BITWISENOT;
+">>>"                       return OP_UNSIGNEDSHIFTRIGHT;
 "<<"                        return OP_SHIFTLEFT;
 ">>"                        return OP_SHIFTRIGHT;
-">>>"                       return OP_UNSIGNEDSHIFTRIGHT;
 "&"                         return OP_BITWISEAND;
 "^"                         return OP_BITWISEXOR;
 "|"                         return OP_BITWISEOR;
@@ -137,9 +147,14 @@ identifier                  [a-zA-Z_][a-zA-Z0-9_]*
 "<<="                       return OP_ASSIGNSHIFTLEFT;
 ">>="                       return OP_ASSIGNSHIFTRIGHT;
 ">>>="                      return OP_ASSIGNUNSIGNEDSHIFTRIGHT;
-"&="                        return OP_ASSIGNAND;
-"^="                        return OP_ASSIGNXOR;
-"|="                        return OP_ASSIGNOR;
+"&="                        return OP_ASSIGNBITWISEAND;
+"^="                        return OP_ASSIGNBITWISEXOR;
+"|="                        return OP_ASSIGNBITWISEOR;
+","                         return OP_COLON;
+";"                         return OP_SEMICOLON;
+"."                         return OP_DOT;
+
+{Dimension}                 return OP_DIM;
 
  /* parantheses */
 "("                         return PARANTHESES_LEFT;
@@ -232,8 +247,21 @@ identifier                  [a-zA-Z_][a-zA-Z0-9_]*
                                 yylval.character = yytext[1];
                                 return LITERAL_CHARACTER;
                             }
-"true"                      return LITERAL_TRUE;
-"false"                     return LITERAL_FALSE;
+"true"                      {
+                                yylval.boolean = 1;
+                                return LITERAL_BOOLEAN;
+                            }
+"false"                     {
+                                yylval.boolean = 0;
+                                return LITERAL_BOOLEAN;
+                            }
+
+{CR}                        {}
+{LF}                        {}
+{FF}                        {}
+{TAB}                       {}
+{BLK}                       {}
+{BLANK}                     {}
 
  /* identifier */
 {identifier}                return IDENTIFIER;
