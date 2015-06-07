@@ -9,6 +9,7 @@ INTERMED	+= $(patsubst %.y, %.c, $(filter %.y, $(SRC)))
 
 OBJ         += $(patsubst %.l, %.o, $(filter %.l, $(SRC)))
 OBJ         += $(patsubst %.y, %.o, $(filter %.y, $(SRC)))
+DEBUG_OBJ   += $(patsubst %.y, %.output, $(filter %.y, $(SRC)))
 
 DEP         := $(OBJ:.o=.d)
 DEP_DEPS	:= $(patsubst %.y, %.h, $(filter %.y, $(SRC)))
@@ -49,7 +50,7 @@ release: $(OUT)
 
 clean:
 	$(MSG) -e "\tCLEAN\t"
-	$(CMD)$(RM) $(INTERMED) $(OBJ) $(DEP) $(OUT) *.output
+	$(CMD)$(RM) $(INTERMED) $(OBJ) $(DEBUG_OBJ) $(DEP) $(OUT)
 
 $(OUT): $(OBJ)
 	$(MSG) -e "\tLINK\t$@"
