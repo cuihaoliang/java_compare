@@ -18,7 +18,9 @@ CXXFLAGS    := -Wall -Werror -pedantic -std=c++11 -D_POSIX_SOURCE=1 -D_GNU_SOURC
 LDFLAGS     :=
 LDLIBS      := -lfl
 
-YACCFLAGS 	:= -d -k
+BISON		?= bison
+
+BISONFLAGS 	:= -d -k
 
 DEBUG       ?= 0
 VERBOSE     ?= 0
@@ -27,7 +29,7 @@ ifeq ($(DEBUG),1)
 	CFLAGS += -O0 -g3 -ggdb -pg -DDEBUG=1
 	CXXFLAGS += -O0 -g3 -ggdb -pg -DDEBUG=1
 	LDFLAGS += -pg
-	YACCFLAGS += --debug --verbose
+	BISONFLAGS += --debug --verbose
 endif
 
 ifeq ($(VERBOSE),1)
@@ -58,8 +60,8 @@ $(OUT): $(OBJ)
 	$(CMD)$(LEX) -o $@ $(LEXFLAGS) $<
 
 %.c %.h: %.y
-	$(MSG) -e "\tYACC\t$@"
-	$(CMD)$(YACC) -o $@ $(YACCFLAGS) $<
+	$(MSG) -e "\tBISON\t$@"
+	$(CMD)$(BISON) -o $@ $(BISONFLAGS) $<
 
 %.o: %.c %.d
 	$(MSG) -e "\tCC\t$@"
