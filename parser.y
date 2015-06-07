@@ -16,30 +16,35 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-%{
+%code requires {
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "integer_floating.h"
+
+#include "ast.h"
 
 extern int yylex();
 extern int yylineno;
 extern char *yytext;
 extern int yylex_destroy();
 
+extern void parser_create();
+extern void parser_destroy();
+int yyparse(void);
 void yyerror(const char *msg);
-%}
+}
 
 %union {
     char *identifier;
-    struct integer_type *integer;
-    struct floating_type *floating;
+    integer_type *integer;
+    floating_type *floating;
     char *string;
     char character;
     int boolean;
 
-    /* TODO */
-    void *node;
+    ast_node *node;
 }
 
 %token _EOF 0       "end of file"
@@ -169,6 +174,58 @@ void yyerror(const char *msg);
 %nonassoc PARANTHESES_RIGHT
 %nonassoc ELSE
 
+%type <node> CompilationUnit
+%type <node> ProgramFile
+%type <node> PackageStatement
+%type <node> ImportStatements
+%type <node> ImportStatement
+%type <node> TypeDeclarations
+
+%type <node> QualifiedName
+
+%type <node> TypeDeclaration
+%type <node> TypeDeclarationOptSemi
+
+%type <node> ClassHeader
+
+%type <node> Modifiers
+%type <node> ClassWord
+%type <node> Extends
+%type <node> Interfaces
+
+%type <node> FieldDeclarations
+%type <node> FieldDeclarationOptSemi
+%type <node> FieldDeclaration
+%type <node> FieldVariableDeclaration
+%type <node> MethodDeclaration
+%type <node> ConstructorDeclaration
+%type <node> StaticInitializer
+%type <node> NonStaticInitializer
+
+%type <node> Modifier
+
+%type <node> PrimitiveType
+%type <node> TypeName
+%type <node> TypeSpecifier
+
+%type <node> ClassNameList
+%type <node> Dims
+
+%type <node> MethodBody
+
+%type <node> MethodDeclarator
+%type <node> DeclaratorName
+
+%type <node> Throws
+
+%type <node> ParameterList
+%type <node> Parameter
+
+%type <node> VariableDeclarator
+%type <node> VariableDeclarators
+
+%type <identifier> IDENTIFIER
+
 %start CompilationUnit
 
 %%
@@ -245,29 +302,88 @@ void yyerror(const char *msg);
   */
 TypeSpecifier
     : TypeName
+        {
+            $$ = node_create(NODE_TYPESPECIFIER);
+            $$->u.body[0] = $1;
+            $$->u.body[1] = NULL;
+        }
     | TypeName Dims
+        {
+            $$ = node_create(NODE_TYPESPECIFIER);
+            $$->u.body[0] = $1;
+            $$->u.body[1] = $2;
+        }
     ;
 
 TypeName
     : PrimitiveType
+        {
+            $$ = $1;
+        }
     | QualifiedName
+        {
+            $$ = $1;
+        }
     ;
 
 ClassNameList
     : QualifiedName
+        {
+            $$ = $1;
+        }
     | ClassNameList OP_COLON QualifiedName
+        {
+            $$ = $1;
+            add_to_list($1, $3);
+        }
     ;
 
 PrimitiveType
     : TYPE_BOOLEAN
+        {
+            $$ = node_create(NODE_IDENTIFIER);
+            $$->u.identifier = strdup("boolean");
+        }
     | TYPE_CHAR
+        {
+            $$ = node_create(NODE_IDENTIFIER);
+            $$->u.identifier = strdup("char");
+        }
     | TYPE_BYTE
+        {
+            $$ = node_create(NODE_IDENTIFIER);
+            $$->u.identifier = strdup("byte");
+        }
     | TYPE_SHORT
+        {
+            $$ = node_create(NODE_IDENTIFIER);
+            $$->u.identifier = strdup("short");
+        }
     | TYPE_INT
+        {
+            $$ = node_create(NODE_IDENTIFIER);
+            $$->u.identifier = strdup("int");
+        }
     | TYPE_LONG
+        {
+            $$ = node_create(NODE_IDENTIFIER);
+            $$->u.identifier = strdup("long");
+        }
     | TYPE_FLOAT
+        {
+            $$ = node_create(NODE_IDENTIFIER);
+            $$->u.identifier = strdup("float");
+        }
     | TYPE_DOUBLE
+        {
+            $$ = node_create(NODE_IDENTIFIER);
+            $$->u.identifier = strdup("double");
+        }
     | VOID
+        {
+            $$ = node_create(NODE_IDENTIFIER);
+            $$->u.identifier = strdup("void");
+        }
     ;
 
 SemiColons
@@ -276,123 +392,416 @@ SemiColons
     ;
 
 CompilationUnit
-    : ProgramFile
+    : ProgramFile               { $$ = $1; current_root = $$;}
     ;
 
 ProgramFile
-    : PackageStatement ImportStatements TypeDeclarations
-    | PackageStatement ImportStatements
-    | PackageStatement      TypeDeclarations
-    |      ImportStatements TypeDeclarations
-    | PackageStatement
-    |      ImportStatements
-    |           TypeDeclarations
+    : PackageStatement ImportStatements TypeDeclarations {
+                $$ = node_create(NODE_FILE);
+                $$->u.body[0] = $1;
+                $$->u.body[1] = $2;
+                $$->u.body[2] = $3;
+            }
+    | PackageStatement ImportStatements {
+                $$ = node_create(NODE_FILE);
+                $$->u.body[0] = $1;
+                $$->u.body[1] = $2;
+                $$->u.body[2] = NULL;
+            }
+    | PackageStatement      TypeDeclarations {
+                $$ = node_create(NODE_FILE);
+                $$->u.body[0] = $1;
+                $$->u.body[1] = NULL;
+                $$->u.body[2] = $2;
+            }
+    |      ImportStatements TypeDeclarations {
+                $$ = node_create(NODE_FILE);
+                $$->u.body[0] = NULL;
+                $$->u.body[1] = $1;
+                $$->u.body[2] = $2;
+            }
+    | PackageStatement {
+                $$ = node_create(NODE_FILE);
+                $$->u.body[0] = $1;
+                $$->u.body[1] = NULL;
+                $$->u.body[2] = NULL;
+            }
+    |      ImportStatements {
+                $$ = node_create(NODE_FILE);
+                $$->u.body[0] = NULL;
+                $$->u.body[1] = $1;
+                $$->u.body[2] = NULL;
+            }
+    |           TypeDeclarations {
+                $$ = node_create(NODE_FILE);
+                $$->u.body[0] = NULL;
+                $$->u.body[1] = NULL;
+                $$->u.body[2] = $1;
+            }
     ;
 
 PackageStatement
-    : PACKAGE QualifiedName SemiColons
+    : PACKAGE QualifiedName SemiColons  {
+            $$ = node_create(NODE_PACKAGE);
+            $$->u.body[0] = $2;
+        }
     ;
 
 TypeDeclarations
     : TypeDeclarationOptSemi
+                    {
+                        $$ = $1;
+                    }
     | TypeDeclarations TypeDeclarationOptSemi
+                    {
+                        $$ = $1;
+                        add_to_list($1, $2);
+                    }
     ;
 
 TypeDeclarationOptSemi
     : TypeDeclaration
+                    {
+                        $$ = $1;
+                    }
     | TypeDeclaration SemiColons
+                    {
+                        $$ = $1;
+                    }
     ;
 
 ImportStatements
     : ImportStatement
+                {
+                    $$ = $1;
+                }
     | ImportStatements ImportStatement
+                {
+                    $$ = $1;
+                    add_to_list($1, $2);
+                }
     ;
 
 ImportStatement
     : IMPORT QualifiedName SemiColons
+                {
+                    $$ = node_create(NODE_IMPORT);
+                    $$->u.body[0] = $2;
+                }
     | IMPORT QualifiedName OP_DOT OP_MULTIPLY SemiColons
+                {
+                    $$ = node_create(NODE_IMPORT);
+                    $$->u.body[0] = $2;
+                    ast_node *id = node_create(NODE_IDENTIFIER);
+                    id->u.identifier = strdup("*");
+                    add_to_list($$->u.body[0], id);
+                }
     ;
 
 QualifiedName
-    : IDENTIFIER
+    : IDENTIFIER    {
+                        $$ = node_create(NODE_IDENTIFIER);
+                        $$->u.identifier = $1;
+                    }
     | QualifiedName OP_DOT IDENTIFIER
+                    {
+                        $$ = $1;
+                        ast_node *id = node_create(NODE_IDENTIFIER);
+                        id->u.identifier = $3;
+                        add_to_list($1, id);
+                    }
     ;
 
 TypeDeclaration
     : ClassHeader BRACES_LEFT FieldDeclarations BRACES_RIGHT
+                    {
+                        $$ = node_create(NODE_CLASS);
+                        $$->u.body[0] = $1;
+                        $$->u.body[1] = $3;
+                    }
     | ClassHeader BRACES_LEFT BRACES_RIGHT
+                    {
+                        $$ = node_create(NODE_CLASS);
+                        $$->u.body[0] = $1;
+                        $$->u.body[1] = NULL;
+                    }
     ;
 
 ClassHeader
     : Modifiers ClassWord IDENTIFIER Extends Interfaces
+        {
+            $$ = node_create(NODE_CLASSHEADER);
+            $$->u.body[0] = $1;
+            $$->u.body[1] = $2;
+            ast_node *id = node_create(NODE_IDENTIFIER);
+            id->u.identifier = $3;
+            $$->u.body[2] = id;
+            $$->u.body[3] = $4;
+            $$->u.body[4] = $5;
+        }
     | Modifiers ClassWord IDENTIFIER Extends
+        {
+            $$ = node_create(NODE_CLASSHEADER);
+            $$->u.body[0] = $1;
+            $$->u.body[1] = $2;
+            ast_node *id = node_create(NODE_IDENTIFIER);
+            id->u.identifier = $3;
+            $$->u.body[2] = id;
+            $$->u.body[3] = $4;
+            $$->u.body[4] = NULL;
+        }
     | Modifiers ClassWord IDENTIFIER       Interfaces
+        {
+            $$ = node_create(NODE_CLASSHEADER);
+            $$->u.body[0] = $1;
+            $$->u.body[1] = $2;
+            ast_node *id = node_create(NODE_IDENTIFIER);
+            id->u.identifier = $3;
+            $$->u.body[2] = id;
+            $$->u.body[3] = NULL;
+            $$->u.body[4] = $4;
+        }
     |       ClassWord IDENTIFIER Extends Interfaces
+        {
+            $$ = node_create(NODE_CLASSHEADER);
+            $$->u.body[0] = NULL;
+            $$->u.body[1] = $1;
+            ast_node *id = node_create(NODE_IDENTIFIER);
+            id->u.identifier = $2;
+            $$->u.body[2] = id;
+            $$->u.body[3] = $3;
+            $$->u.body[4] = $4;
+        }
     | Modifiers ClassWord IDENTIFIER
+        {
+            $$ = node_create(NODE_CLASSHEADER);
+            $$->u.body[0] = $1;
+            $$->u.body[1] = $2;
+            ast_node *id = node_create(NODE_IDENTIFIER);
+            id->u.identifier = $3;
+            $$->u.body[2] = id;
+            $$->u.body[3] = NULL;
+            $$->u.body[4] = NULL;
+        }
     |       ClassWord IDENTIFIER Extends
+        {
+            $$ = node_create(NODE_CLASSHEADER);
+            $$->u.body[0] = NULL;
+            $$->u.body[1] = $1;
+            ast_node *id = node_create(NODE_IDENTIFIER);
+            id->u.identifier = $2;
+            $$->u.body[2] = id;
+            $$->u.body[3] = $3;
+            $$->u.body[4] = NULL;
+        }
     |       ClassWord IDENTIFIER       Interfaces
+        {
+            $$ = node_create(NODE_CLASSHEADER);
+            $$->u.body[0] = NULL;
+            $$->u.body[1] = $1;
+            ast_node *id = node_create(NODE_IDENTIFIER);
+            id->u.identifier = $2;
+            $$->u.body[2] = id;
+            $$->u.body[3] = NULL;
+            $$->u.body[4] = $3;
+        }
     |       ClassWord IDENTIFIER
+        {
+            $$ = node_create(NODE_CLASSHEADER);
+            $$->u.body[0] = NULL;
+            $$->u.body[1] = $1;
+            ast_node *id = node_create(NODE_IDENTIFIER);
+            id->u.identifier = $2;
+            $$->u.body[2] = id;
+            $$->u.body[3] = NULL;
+            $$->u.body[4] = NULL;
+        }
     ;
 
 Modifiers
     : Modifier
+        {
+            $$ = $1;
+        }
     | Modifiers Modifier
+        {
+           $$ = $1;
+           add_to_list($1, $2);
+        }
     ;
 
 Modifier
     : ABSTRACT
+        {
+            $$ = node_create(NODE_IDENTIFIER);
+            $$->u.identifier = strdup("abstract");
+        }
     | FINAL
+        {
+            $$ = node_create(NODE_IDENTIFIER);
+            $$->u.identifier = strdup("final");
+        }
     | PUBLIC
+        {
+            $$ = node_create(NODE_IDENTIFIER);
+            $$->u.identifier = strdup("public");
+        }
     | PROTECTED
+        {
+            $$ = node_create(NODE_IDENTIFIER);
+            $$->u.identifier = strdup("protected");
+        }
     | PRIVATE
+        {
+            $$ = node_create(NODE_IDENTIFIER);
+            $$->u.identifier = strdup("private");
+        }
     | STATIC
+        {
+            $$ = node_create(NODE_IDENTIFIER);
+            $$->u.identifier = strdup("static");
+        }
     | TRANSIENT
+        {
+            $$ = node_create(NODE_IDENTIFIER);
+            $$->u.identifier = strdup("transient");
+        }
     | VOLATILE
+        {
+            $$ = node_create(NODE_IDENTIFIER);
+            $$->u.identifier = strdup("volatile");
+        }
     | NATIVE
+        {
+            $$ = node_create(NODE_IDENTIFIER);
+            $$->u.identifier = strdup("native");
+        }
     | SYNCHRONIZED
+        {
+            $$ = node_create(NODE_IDENTIFIER);
+            $$->u.identifier = strdup("synchronized");
+        }
     ;
 
 ClassWord
     : CLASS
+        {
+            $$ = node_create(NODE_IDENTIFIER);
+            $$->u.identifier = strdup("class");
+        }
     | INTERFACE
+        {
+            $$ = node_create(NODE_IDENTIFIER);
+            $$->u.identifier = strdup("interface");
+        }
     ;
 
 Interfaces
     : IMPLEMENTS ClassNameList
+        {
+            $$ = $2;
+        }
     ;
 
 FieldDeclarations
     : FieldDeclarationOptSemi
+                    {
+                        $$ = $1;
+                    }
     | FieldDeclarations FieldDeclarationOptSemi
+                    {
+                        $$ = $1;
+                        add_to_list($1, $2);
+                    }
     ;
 
 FieldDeclarationOptSemi
     : FieldDeclaration
+        {
+            $$ = $1;
+        }
     | FieldDeclaration SemiColons
+        {
+            $$ = $1;
+        }
     ;
 
 FieldDeclaration
     : FieldVariableDeclaration OP_SEMICOLON
+        {
+            $$ = node_create(NODE_FIELDDECLARATIONS);
+            $$->u.body[0] = $1;
+        }
     | MethodDeclaration
+        {
+            $$ = node_create(NODE_FIELDDECLARATIONS);
+            $$->u.body[0] = $1;
+        }
     | ConstructorDeclaration
+        {
+            $$ = node_create(NODE_FIELDDECLARATIONS);
+            $$->u.body[0] = $1;
+        }
     | StaticInitializer
+        {
+            $$ = node_create(NODE_FIELDDECLARATIONS);
+            $$->u.body[0] = $1;
+        }
     | NonStaticInitializer
+        {
+            $$ = node_create(NODE_FIELDDECLARATIONS);
+            $$->u.body[0] = $1;
+        }
     | TypeDeclaration
+        {
+            $$ = node_create(NODE_FIELDDECLARATIONS);
+            $$->u.body[0] = $1;
+        }
     ;
 
 FieldVariableDeclaration
     : Modifiers TypeSpecifier VariableDeclarators
+        {
+            $$ = node_create(NODE_VARIABLEDECLARATION);
+            $$->u.body[0] = $1;
+            $$->u.body[1] = $2;
+            $$->u.body[2] = $3;
+        }
     |       TypeSpecifier VariableDeclarators
+        {
+            $$ = node_create(NODE_VARIABLEDECLARATION);
+            $$->u.body[0] = NULL;
+            $$->u.body[1] = $1;
+            $$->u.body[2] = $2;
+        }
     ;
 
 VariableDeclarators
     : VariableDeclarator
+        {
+            $$ = $1;
+        }
     | VariableDeclarators OP_COLON VariableDeclarator
+        {
+            $$ = $1;
+            add_to_list($1, $3);
+        }
     ;
 
 VariableDeclarator
     : DeclaratorName
+        {
+            $$ = node_create(NODE_VARIABLEDECLARATOR);
+            $$->u.body[0] = $1;
+            $$->u.body[1] = NULL;
+        }
     | DeclaratorName OP_ASSIGN VariableInitializer
+        {
+            $$ = node_create(NODE_VARIABLEDECLARATOR);
+            $$->u.body[0] = $1;
+            // TODO: we don't care about initializers for now
+            $$->u.body[1] = NULL;
+        }
     ;
 
 VariableInitializer
@@ -409,39 +818,130 @@ ArrayInitializers
 
 MethodDeclaration
     : Modifiers TypeSpecifier MethodDeclarator Throws MethodBody
+        {
+            $$ = node_create(NODE_METHODDECLARATION);
+            $$->u.body[0] = $1;
+            $$->u.body[1] = $2;
+            $$->u.body[2] = $3;
+            $$->u.body[3] = $4;
+            $$->u.body[4] = $5;
+        }
     | Modifiers TypeSpecifier MethodDeclarator    MethodBody
+        {
+            $$ = node_create(NODE_METHODDECLARATION);
+            $$->u.body[0] = $1;
+            $$->u.body[1] = $2;
+            $$->u.body[2] = $3;
+            $$->u.body[3] = NULL;
+            $$->u.body[4] = $4;
+        }
     |       TypeSpecifier MethodDeclarator Throws MethodBody
+        {
+            $$ = node_create(NODE_METHODDECLARATION);
+            $$->u.body[0] = NULL;
+            $$->u.body[1] = $1;
+            $$->u.body[2] = $2;
+            $$->u.body[3] = $3;
+            $$->u.body[4] = $4;
+        }
     |       TypeSpecifier MethodDeclarator    MethodBody
+        {
+            $$ = node_create(NODE_METHODDECLARATION);
+            $$->u.body[0] = NULL;
+            $$->u.body[1] = $1;
+            $$->u.body[2] = $2;
+            $$->u.body[3] = NULL;
+            $$->u.body[4] = $3;
+        }
     ;
 
 MethodDeclarator
     : DeclaratorName PARANTHESES_LEFT ParameterList PARANTHESES_RIGHT
+        {
+            $$ = node_create(NODE_METHODDECLARATOR);
+            $$->u.body[0] = $1;
+            $$->u.body[1] = $3;
+            $$->u.body[2] = NULL;
+        }
     | DeclaratorName PARANTHESES_LEFT PARANTHESES_RIGHT
+        {
+            $$ = node_create(NODE_METHODDECLARATOR);
+            $$->u.body[0] = $1;
+            $$->u.body[1] = NULL;
+            $$->u.body[2] = NULL;
+        }
     | MethodDeclarator OP_DIM
+        {
+            $$ = $1;
+            $$->u.body[2] = node_create(NODE_DIM);
+        }
     ;
 
 ParameterList
     : Parameter
+        {
+            $$ = $1;
+        }
     | ParameterList OP_COLON Parameter
+        {
+            $$ = $1;
+            add_to_list($1, $3);
+        }
     ;
 
 Parameter
     : TypeSpecifier DeclaratorName
+        {
+            $$ = node_create(NODE_PARAMETERS);
+            $$->u.body[0] = NULL;
+            $$->u.body[1] = $1;
+            $$->u.body[2] = $2;
+        }
     | FINAL TypeSpecifier DeclaratorName
+        {
+            $$ = node_create(NODE_PARAMETERS);
+            ast_node *id = node_create(NODE_IDENTIFIER);
+            id->u.identifier = strdup("final");
+            $$->u.body[0] = id;
+            $$->u.body[1] = $2;
+            $$->u.body[2] = $3;
+        }
     ;
 
 DeclaratorName
     : IDENTIFIER
+        {
+            $$ = node_create(NODE_DECLARATORNAME);
+            ast_node *id = node_create(NODE_IDENTIFIER);
+            id->u.identifier = $1;
+            $$->u.body[0] = id;
+            $$->u.body[1] = NULL;
+        }
     | DeclaratorName OP_DIM
+        {
+            $$ = node_create(NODE_DECLARATORNAME);
+            $$->u.body[0] = $1;
+            $$->u.body[1] = node_create(NODE_DIM);
+        }
     ;
 
 Throws
     : THROWS ClassNameList
+        {
+            $$ = $2;
+        }
     ;
 
+ /* for now we don't care about local variables */
 MethodBody
     : Block
+        {
+            $$ = NULL;
+        }
     | OP_SEMICOLON
+        {
+            $$ = NULL;
+        }
     ;
 
 ConstructorDeclaration
@@ -466,7 +966,15 @@ NonStaticInitializer
 
 Extends
     : EXTENDS TypeName
+        {
+            $$ = node_create(NODE_EXTENDS);
+            $$->u.body[0] = $2;
+        }
     | Extends OP_COLON TypeName
+        {
+            $$ = node_create(NODE_EXTENDS);
+            $$->u.body[0] = $3;
+        }
     ;
 
 Block
@@ -680,7 +1188,14 @@ DimExpr
 
 Dims
     : OP_DIM
+        {
+            $$ = node_create(NODE_DIM);
+        }
     | Dims OP_DIM
+        {
+            $$ = $1;
+            add_to_list($1, node_create(NODE_DIM));
+        }
     ;
 
 PostfixExpression

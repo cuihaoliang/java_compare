@@ -2,10 +2,7 @@
 
 extern "C" {
 #include "parser.h"
-
-extern void parser_create();    // TODO: move this to parser.h?
-extern void parser_destroy();   // TODO: -"-
-int yyparse(void);              // TODO: -"-
+#include "ast.h"
 }
 
 using namespace std;
@@ -34,6 +31,10 @@ int main(int argc, char *argv[])
         cout << "parser failed!" << endl;
         goto fail;
     }
+
+    /* testing */
+    traverse_ast(current_root);
+    delete_ast(current_root);
 
     parser_destroy();
     

@@ -1,5 +1,5 @@
 OUT         := java_compare
-SRC         := main.cpp parser.y lexer.l
+SRC         := main.cpp ast.cpp parser.y lexer.l
 OBJ         := $(patsubst %.c, %.o, $(filter %.c, $(SRC)))
 OBJ         += $(patsubst %.cpp, %.o, $(filter %.cpp, $(SRC)))
 

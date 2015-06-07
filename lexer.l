@@ -22,6 +22,7 @@
 
 #include "integer_floating.h"
 #include "parser.h"
+#include "ast.h"
 
 static void yyunput (int c, register char * yy_bp ) __attribute__((unused));
 static int input  (void) __attribute__((unused));
@@ -264,7 +265,10 @@ Dimension                   [\[]({CR}|{LF}|{FF}|{TAB}|{BLK}|{BLANK})*[\]]
 {BLANK}                     {}
 
  /* identifier */
-{identifier}                return IDENTIFIER;
+{identifier}                {
+                                yylval.identifier = strdup(yytext);
+                                return IDENTIFIER;
+                            }
 
 <<EOF>>                     return _EOF;
 
