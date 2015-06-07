@@ -54,6 +54,8 @@ void add_to_list(ast_node *list, ast_node *node);
 
 void add_identifier(char **loc, char *text);
 
+void cleanup_asts();
+
 #ifdef __cplusplus
 }
 #endif

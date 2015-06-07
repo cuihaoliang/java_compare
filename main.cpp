@@ -69,6 +69,7 @@ pair<string, ast_node*> create_ast(string filename)
 
     return make_pair(filename, current_root);
 }
+
 int main(int argc, char *argv[])
 {
     char *dir_one, *dir_two;
@@ -138,7 +139,13 @@ int main(int argc, char *argv[])
     {
         delete_ast(it->second);
     }
-    
+
+    /* this is currently necessary to free identifiers/strings which have been
+     * allocated but are never used. this can be done cleaner by deleting the
+     * correspoding nodes directly with delete_node in parser.y
+     */
+    cleanup_asts();
+
     if(failed) return -2;
     return 0;
 }

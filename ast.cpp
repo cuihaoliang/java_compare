@@ -8,14 +8,14 @@
 
 using namespace std;
 
-ast_node *current_root;
+ast_node *current_root = nullptr;
 
 /* we need this map to delete identifiers which have been used within block
  * because we don't parse blocks
  * true indicates deleted, false not
  * needs to be stored per current_root.
  */
-map<ast_node*, map<char*, bool>> identifier_map;
+map<char*, bool> identifier_map;
 
 ast_node *node_create(node_type type)
 {
@@ -500,7 +500,7 @@ void print_node(ast_node *node)
 void delete_identifier(char *id)
 {
     /* free string, has been allocated with strdup */
-    (identifier_map[current_root])[id] = true;
+    identifier_map[id] = true;
     free(id);
 }
 
@@ -823,27 +823,35 @@ void delete_node(ast_node *node)
 void traverse_ast(ast_node *node)
 {
     current_root = node;
+
     print_node(node);
 }
 
 void delete_ast(ast_node *node)
 {
     current_root = node;
+
     delete_node(node);
+}
+
+void cleanup_asts()
+{
     /* delete not already deleted identifiers */
-    for(map<char*, bool>::iterator it = identifier_map[current_root].begin();it != identifier_map[current_root].end();it++)
+    for(map<char*, bool>::iterator it = identifier_map.begin();it != identifier_map.end();it++)
     {
         if(!it->second)
         {
             /* identifiers have been allocated with strdup */
             free(it->first);
+            it->second = true;
         }
     }
+
 }
 
 void add_identifier(char **loc, char *text)
 {
     *loc = strdup(text);
-    (identifier_map[current_root])[*loc] = false;
+    identifier_map[*loc] = false;
 }
 
