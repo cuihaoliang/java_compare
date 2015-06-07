@@ -14,10 +14,10 @@ DEBUG_OBJ   += $(patsubst %.y, %.output, $(filter %.y, $(SRC)))
 DEP         := $(OBJ:.o=.d)
 DEP_DEPS	:= $(patsubst %.y, %.h, $(filter %.y, $(SRC)))
 
-CFLAGS      := -Wall -Werror -pedantic -std=gnu99 -D_POSIX_SOURCE=1 -D_GNU_SOURCE
-CXXFLAGS    := -Wall -Werror -pedantic -std=c++11 -D_POSIX_SOURCE=1 -D_GNU_SOURCE
+CFLAGS      := -Wall -std=gnu99 -D_POSIX_SOURCE=1 -D_GNU_SOURCE
+CXXFLAGS    := -Wall -std=c++11 -D_POSIX_SOURCE=1 -D_GNU_SOURCE
 LDFLAGS     :=
-LDLIBS      := -lfl
+LDLIBS      := -lfl -lboost_system -lboost_filesystem
 
 BISON		?= bison
 
